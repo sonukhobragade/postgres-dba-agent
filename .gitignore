@@ -1,0 +1,14 @@
+.env
+*.log
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# harness template state
+.template.env
+.template.modules
+.claude/logs/
+
+# Local Claude Code MCP server config; may contain API tokens
+.mcp.json

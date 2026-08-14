@@ -1,0 +1,84 @@
+apiVersion: 1
+
+groups:
+  - name: Database Performance
+    folder: Database Monitoring
+    interval: 1m
+    rules:
+      - title: High Connection Usage
+        condition: |
+          max(pg_stat_database_numbackends{datname="app_db"}) / pg_settings_max_connections{} * 100 > ${MAX_CONNECTIONS_THRESHOLD}
+        for: 5m
+        labels:
+          severity: warning
+          database: app_db
+        annotations:
+          summary: High database connection utilization
+          description: "Connection count has exceeded ${MAX_CONNECTIONS_THRESHOLD}% of max_connections. This may lead to connection timeouts for new clients."
+          impact: "New application connections may fail"
+          action: "Consider connection pooling or increasing max_connections"
+
+      - title: Slow Query Detection
+        condition: |
+          max(rate(pg_stat_activity_max_tx_duration{datname="app_db"}[5m])) > ${SLOW_QUERY_THRESHOLD_MS}
+        for: 5m
+        labels:
+          severity: warning
+          database: app_db
+        annotations:
+          summary: Slow queries detected
+          description: "Queries taking longer than ${SLOW_QUERY_THRESHOLD_MS}ms to execute"
+          impact: "Application response time degradation"
+          action: "Review pg_stat_statements for problematic queries"
+
+      - title: Cache Hit Ratio Alert
+        condition: |
+          (sum(rate(pg_stat_database_blks_hit{datname="app_db"}[5m])) / (sum(rate(pg_stat_database_blks_hit{datname="app_db"}[5m])) + sum(rate(pg_stat_database_blks_read{datname="app_db"}[5m])))) * 100 < ${CACHE_HIT_RATIO_MIN}
+        for: 10m
+        labels:
+          severity: warning
+          database: app_db
+        annotations:
+          summary: Low cache hit ratio
+          description: "Cache hit ratio below ${CACHE_HIT_RATIO_MIN}%. Database is reading too much from disk."
+          impact: "Increased I/O load and slower query performance"
+          action: "Consider increasing shared_buffers or work_mem"
+
+      - title: Dead Tuples Accumulation
+        condition: |
+          max(pg_stat_user_tables_n_dead_tup{datname="app_db"}) > ${DEAD_TUPLES_THRESHOLD}
+        for: 15m
+        labels:
+          severity: warning
+          database: app_db
+        annotations:
+          summary: High number of dead tuples
+          description: "Tables have accumulated more than ${DEAD_TUPLES_THRESHOLD} dead tuples"
+          impact: "Increased table bloat and slower queries"
+          action: "Run VACUUM on affected tables"
+
+      - title: Rapid Table Growth
+        condition: |
+          rate(pg_stat_user_tables_n_tup_ins{datname="app_db"}[1h]) > ${TABLE_GROWTH_RATE_MAX}
+        for: 15m
+        labels:
+          severity: warning
+          database: app_db
+        annotations:
+          summary: Unusual table growth rate
+          description: "Table insertion rate exceeds ${TABLE_GROWTH_RATE_MAX} rows per second"
+          impact: "Potential disk space issues and performance degradation"
+          action: "Review application behavior and consider partitioning"
+
+      - title: Transaction Wraparound Warning
+        condition: |
+          (pg_stat_database_age{datname="app_db"} / pg_settings_xid_warn_limit{}) * 100 > 75
+        for: 1h
+        labels:
+          severity: critical
+          database: app_db
+        annotations:
+          summary: Transaction ID wraparound approaching
+          description: "Database is using more than 75% of available transaction IDs"
+          impact: "Database may enter read-only mode if not addressed"
+          action: "Schedule VACUUM FREEZE operations"
