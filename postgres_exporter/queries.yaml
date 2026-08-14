@@ -1,0 +1,95 @@
+pg_slow_queries:
+  query: |
+    SELECT 
+      query,
+      calls,
+      total_exec_time / calls as avg_time,
+      rows / calls as avg_rows,
+      shared_blks_hit / calls as avg_shared_blks_hit,
+      shared_blks_read / calls as avg_shared_blks_read,
+      shared_blks_written / calls as avg_shared_blks_written,
+      temp_blks_read / calls as avg_temp_blks_read,
+      temp_blks_written / calls as avg_temp_blks_written
+    FROM pg_stat_statements 
+    WHERE dbid = (SELECT oid FROM pg_database WHERE datname = current_database())
+    ORDER BY total_exec_time DESC 
+    LIMIT 10;
+  metrics:
+    - query:
+        usage: "LABEL"
+        description: "Query text"
+    - calls:
+        usage: "COUNTER"
+        description: "Number of times executed"
+    - avg_time:
+        usage: "GAUGE"
+        description: "Average execution time in milliseconds"
+    - avg_rows:
+        usage: "GAUGE"
+        description: "Average number of rows returned"
+    - avg_shared_blks_hit:
+        usage: "GAUGE"
+        description: "Average shared blocks hit (from cache)"
+    - avg_shared_blks_read:
+        usage: "GAUGE"
+        description: "Average shared blocks read from disk"
+    - avg_shared_blks_written:
+        usage: "GAUGE"
+        description: "Average shared blocks written to disk"
+    - avg_temp_blks_read:
+        usage: "GAUGE"
+        description: "Average temp blocks read"
+    - avg_temp_blks_written:
+        usage: "GAUGE"
+        description: "Average temp blocks written"
+
+pg_table_stats:
+  query: |
+    SELECT 
+      schemaname,
+      relname,
+      seq_scan,
+      seq_tup_read,
+      idx_scan,
+      idx_tup_fetch,
+      n_tup_ins,
+      n_tup_upd,
+      n_tup_del,
+      n_live_tup,
+      n_dead_tup
+    FROM pg_stat_user_tables 
+    WHERE schemaname NOT IN ('pg_catalog', 'information_schema');
+  metrics:
+    - schemaname:
+        usage: "LABEL"
+        description: "Schema name"
+    - relname:
+        usage: "LABEL"
+        description: "Table name"
+    - seq_scan:
+        usage: "COUNTER"
+        description: "Number of sequential scans"
+    - seq_tup_read:
+        usage: "COUNTER"
+        description: "Number of tuples read by sequential scans"
+    - idx_scan:
+        usage: "COUNTER"
+        description: "Number of index scans"
+    - idx_tup_fetch:
+        usage: "COUNTER"
+        description: "Number of tuples fetched by index scans"
+    - n_tup_ins:
+        usage: "COUNTER"
+        description: "Number of tuples inserted"
+    - n_tup_upd:
+        usage: "COUNTER"
+        description: "Number of tuples updated"
+    - n_tup_del:
+        usage: "COUNTER"
+        description: "Number of tuples deleted"
+    - n_live_tup:
+        usage: "GAUGE"
+        description: "Number of live tuples"
+    - n_dead_tup:
+        usage: "GAUGE"
+        description: "Number of dead tuples"

@@ -1,0 +1,151 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: "PostgreSQL Alerts"
+    folder: "Database Monitoring"
+    interval: 1m
+    rules:
+      - uid: high_connections
+        title: High Connection Count
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: pg_stat_database_numbackends{datname="dba_monitoring"}
+              instant: false
+              range: true
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 80
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 5m
+        annotations:
+          summary: High number of database connections
+          description: Database connection count is over 80% of maximum allowed
+        labels:
+          severity: warning
+
+      - uid: db_size_growth
+        title: Database Size Growth
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: rate(pg_database_size_bytes{datname="dba_monitoring"}[6h])
+              instant: false
+              range: true
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 21600
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1000000000
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 1h
+        annotations:
+          summary: Rapid database size growth
+          description: Database is growing faster than 1GB per 6 hours
+        labels:
+          severity: warning
+
+      - uid: slow_queries
+        title: Slow Queries
+        condition: B
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: prometheus
+            model:
+              editorMode: code
+              expr: rate(pg_stat_activity_max_tx_duration{datname="dba_monitoring"}[5m])
+              instant: false
+              range: true
+              refId: A
+          - refId: B
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 30
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params: []
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              type: threshold
+        noDataState: NoData
+        execErrState: Error
+        for: 10m
+        annotations:
+          summary: Slow running queries detected
+          description: Queries are taking longer than 30 seconds to execute
+        labels:
+          severity: warning
