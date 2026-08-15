@@ -1,5 +1,7 @@
 # postgres-dba-agent
 
+![gate](../../actions/workflows/gate.yml/badge.svg)
+
 Watches a PostgreSQL instance, and when something looks wrong, asks an LLM to
 write the tuning advice — then posts it to Slack as a readable card rather than
 a metric that fires at 3am and means nothing.
@@ -7,6 +9,30 @@ a metric that fires at 3am and means nothing.
 Ships with Prometheus, `postgres_exporter` and Grafana wired up in Compose, so
 it stands up as a whole monitoring stack rather than a script you have to find a
 home for.
+
+## The stack it stands up
+
+```mermaid
+flowchart TD
+    PG[(PostgreSQL)]
+    EXP[postgres_exporter]
+    PROM[Prometheus]
+    GRAF[Grafana dashboards]
+
+    MON[monitor_and_alert.py<br/>threshold checks]
+    LLM[dba_ai_agent.py<br/>LLM writes the tuning advice]
+    SLACK[Slack card<br/>what is wrong and what to try]
+
+    PG --> EXP --> PROM --> GRAF
+    PG --> MON
+    MON -->|something looks wrong| LLM --> SLACK
+
+    classDef ext fill:#eef,stroke:#88a
+    class PG,GRAF,SLACK ext
+```
+
+Compose brings up the exporter, Prometheus and Grafana together, so this is a
+monitoring stack rather than a script you have to find a home for.
 
 ## The idea
 
