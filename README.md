@@ -98,6 +98,25 @@ statement, query rewrites with the SQL, and partitioning candidates with the
 table and the growth figure that triggered it. Table and column names in those
 examples are generic placeholders; yours will reflect your own schema.
 
+## What it does not do
+
+- **It advises, it never modifies.** The agent issues its own queries, but
+  they are reads against the statistics views. It emits no DDL or DML: every
+  suggested `VACUUM`, index or setting change is text for a human to run or
+  discard, and a read-only role is enough to run the whole thing.
+- **The advice is model output.** It is grounded in the metrics it collected,
+  but an LLM can still be confidently wrong about a tuning decision. Treat a
+  card as a hypothesis, and never paste a suggested statement into production
+  without reading it.
+- **Thresholds are generic.** The defaults describe a typical OLTP instance.
+  A warehouse workload will trip them constantly until they are retuned.
+- **One instance per deployment.** No fleet view, no replica topology.
+- **It needs an API key and sends metrics to a model provider.** Query text
+  can contain literals; check what your queries embed before enabling it on a
+  sensitive system.
+- **Alert fatigue is still possible.** Slack cards are readable, but nothing
+  here deduplicates a condition that flaps.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
