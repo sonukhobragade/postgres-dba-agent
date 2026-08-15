@@ -87,7 +87,7 @@ async def analyze_db(background_tasks: BackgroundTasks):
     try:
         optimizer = LLMQueryOptimizer()
         # Use the first available connection or a specific one if needed
-        conn_name = os.environ.get('DEFAULT_DB_CONNECTION', 'gcp_postgres')
+        conn_name = os.environ.get('DEFAULT_DB_CONNECTION', 'default_postgres')
         background_tasks.add_task(optimizer.generate_insights, conn_name)
         return {"status": "success", "message": f"Database analysis started in the background for connection {conn_name}"}
     except Exception as e:
@@ -321,16 +321,24 @@ class LLMQueryOptimizer:
     def init_connections(self):
         """Initialize database connections"""
         try:
-            # GCP PostgreSQL connection
-            gcp_postgres = DatabaseConnection(
+            # Default PostgreSQL connection.
+            # DB_PASSWORD has no default on purpose: a fallback password gets
+            # committed, then quietly authenticates somewhere real.
+            password = os.environ.get('DB_PASSWORD')
+            if password is None:
+                raise RuntimeError(
+                    "DB_PASSWORD is not set. Set it in the environment; "
+                    "there is deliberately no default."
+                )
+            default_postgres = DatabaseConnection(
                 db_type='postgresql',
                 host=os.environ.get('DB_HOST', 'localhost'),
                 port=int(os.environ.get('DB_PORT', 5432)),
                 database=os.environ.get('DB_NAME', 'postgres'),
                 user=os.environ.get('DB_USER', 'postgres'),
-                password=os.environ.get('DB_PASSWORD', 'postgres')
+                password=password
             )
-            self.connections['gcp_postgres'] = gcp_postgres
+            self.connections['default_postgres'] = default_postgres
             
             # Add more connections as needed
             

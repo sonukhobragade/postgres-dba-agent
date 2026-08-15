@@ -142,7 +142,7 @@ def check_database_insights():
         
         # Generate insights for the session database
         logger.info("Generating insights for session database...")
-        insights = optimizer.generate_insights('gcp_postgres')
+        insights = optimizer.generate_insights('default_postgres')
         
         if insights:
             # Analyze database performance and send to Slack
