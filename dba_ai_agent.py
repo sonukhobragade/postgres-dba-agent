@@ -516,7 +516,7 @@ Please provide:
 Format the response in a clear, structured way."""
 
             completion = self.client.chat.completions.create(
-                model="gpt-4-turbo-preview",
+                model=self.model,
                 messages=[
                     {"role": "system", "content": "You are an expert PostgreSQL Database Administrator."},
                     {"role": "user", "content": prompt}
