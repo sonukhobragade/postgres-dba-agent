@@ -93,10 +93,32 @@ apply.
 
 ## Example advice format
 
+Each alert posts as a Slack card built by `slack_notifier.py`:
+
+```
+┌──────────────────────────────────────────────┐
+│ 🔴  Slow query detected            <- header │
+├──────────────────────────────────────────────┤
+│ <the model's recommendation>      <- section │
+├──────────────────────────────────────────────┤
+│ Details:                                     │
+│ <collected metrics that triggered it>        │
+├──────────────────────────────────────────────┤
+│ Time: 2026-09-02 14:02:11         <- context │
+└──────────────────────────────────────────────┘
+```
+
+The card structure is fixed code; only the recommendation body is model output.
 Recommendations arrive grouped: index suggestions with the `CREATE INDEX`
 statement, query rewrites with the SQL, and partitioning candidates with the
 table and the growth figure that triggered it. Table and column names in those
 examples are generic placeholders; yours will reflect your own schema.
+
+### Which model
+
+`LLMQueryOptimizer(model=...)` selects it, defaulting to `gpt-4`, and
+`LLM_API_BASE_URL` points at any OpenAI-compatible endpoint. Set both to run
+against a local server instead of a hosted provider.
 
 ## What it does not do
 
