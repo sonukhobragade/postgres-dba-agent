@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # DBA AI Agent API
   dba-ai-agent:
@@ -8,8 +6,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8000"  # API port
-      - "8002:8002"  # Prometheus metrics port
+      - "8002:8002"  # Prometheus metrics port; must match prometheus.yml
     environment:
+      # dba_ai_agent.py only calls start_http_server() when this is true, so
+      # without it prometheus.yml scrapes a server that was never started.
+      - ENABLE_PROMETHEUS_SERVER=true
       - LLM_API_KEY=${LLM_API_KEY}
       - LLM_API_BASE_URL=${LLM_API_BASE_URL}
       - DB_HOST=${DB_HOST}
@@ -47,6 +48,25 @@ services:
     networks:
       - dba-network
 
+  # postgres_exporter. prometheus.yml scrapes `postgres-exporter:9187`, and
+  # postgres_exporter/queries.yaml exists to configure it, but the service was
+  # never declared -- so the Postgres target was permanently down and the
+  # dashboards had nothing to draw.
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    ports:
+      - "9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
+    volumes:
+      - ./postgres_exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    restart: unless-stopped
+    networks:
+      - dba-network
+    depends_on:
+      - postgres
+
   # Prometheus for metrics collection
   prometheus:
     image: prom/prometheus:v2.45.0
@@ -72,6 +92,9 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      # Expanded by the alerting provisioning. Defaulted so an unconfigured
+      # Slack leaves alerts undelivered rather than stopping Grafana booting.
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-https://hooks.slack.invalid/unconfigured}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
