@@ -35,6 +35,17 @@ services:
   # PostgreSQL Monitoring Database
   postgres:
     image: postgres:15
+    # pg_stat_statements is the source for the slow-query check, and it must be
+    # in shared_preload_libraries at server start. Creating the extension alone
+    # is not enough: the catalogue entry appears, so an existence check passes,
+    # and then every read of the view raises "must be loaded via
+    # shared_preload_libraries". Without this the headline check never runs.
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+      - -c
+      - pg_stat_statements.track=all
     ports:
       - "5433:5432"
     environment:
