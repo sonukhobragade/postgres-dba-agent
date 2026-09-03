@@ -20,5 +20,5 @@ scrape_configs:
 
   - job_name: 'dba-ai-agent'
     static_configs:
-      - targets: ['dba-ai-agent:8001']
+      - targets: ['dba-ai-agent:8002']
     metrics_path: /metrics

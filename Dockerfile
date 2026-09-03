@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Expose ports for API and Prometheus metrics
-EXPOSE 8000 8001
+EXPOSE 8000 8002
 
 # Run the application with uvicorn
 CMD ["uvicorn", "dba_ai_agent:app", "--host", "0.0.0.0", "--port", "8000"]

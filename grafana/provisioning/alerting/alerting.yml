@@ -6,8 +6,12 @@ contactPoints:
       - uid: slack-notifications
         type: slack
         settings:
+          # Webhook only. Setting `recipient` here sends Grafana down the Slack
+          # chat-API path, which requires a token and aborts provisioning when
+          # one is absent -- Grafana then crash-loops on a stack that documents
+          # Slack as optional. The default keeps provisioning valid when Slack
+          # is unconfigured; delivery simply fails and the stack still runs.
           url: ${SLACK_WEBHOOK_URL}
-          recipient: "#db-monitoring"
           text: >-
             *[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}*
             {{ .CommonAnnotations.summary }}
@@ -23,10 +27,13 @@ contactPoints:
 
 policies:
   - orgId: 1
-    receiver: slack-notifications
+    # Must be the contactPoint *name* above, not the receiver uid. Grafana
+    # rejects the whole file with "receiver 'slack-notifications' does not
+    # exist" otherwise -- previously masked by the token error aborting first.
+    receiver: DBA Team
     group_by: ['alertname', 'database']
     routes:
-      - receiver: slack-notifications
+      - receiver: DBA Team
         group_wait: 30s
         group_interval: 5m
         repeat_interval: 4h
